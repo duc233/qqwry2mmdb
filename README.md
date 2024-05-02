@@ -1,4 +1,4 @@
-混合了(qqwry-纯真 IP库CN段)和(MaxMind Geoip2.mmdb)的IP数据库。也就是：提取了qqwry的CN段覆盖MaxMind的IP库。最终格式为MaxMind的*.mmdb  
+合并了(qqwry-纯真 IP库CN段)和(MaxMind GeoLite2.mmdb)的IP数据库。也就是：提取了qqwry的CN段覆盖MaxMind的IP库。最终格式为MaxMind的*.mmdb  
 因为感觉qqwry的海外IP不准，而MaxMind的中国IP不准。才这么搞。(再之前因为折腾NexusPHP PT站，新版本网站用的是mmdb识别IP地址。)
 
 源ip库文件：
@@ -50,8 +50,18 @@ GeoLite2-Country.mmdb 2024年5月01日版 MD5: b72b6db6d4b10ddec23daccd06145f90
  
  
 -----------以下是PT Nexus的mmdb识别问题，与主题ip库合并无关-----------
-折腾PT站 https://github.com/xiaomlove/nexusphp时，ip识别用的时mmdb。然而加载自定义*.mmdb时会出现一些问题，日志显示
-/nexusphp/vendor/geoip2/geoip2/
+折腾PT站 xiaomlove/nexusphp时，ip识别用的是mmdb。然而加载自定义*.mmdb时会出现一些问题，日志显示  
+```production.ERROR /nexusphp/include/functions.php:5887 {closure} The city method cannot be used to open a userqqwry database#0 /nexusphp/vendor/geoip2/geoip2/src/Database/Reader.php(231): GeoIp2\Database\Reader->getRecord()```
+原因是，默认加载mmdb文件为MaxMind的city类型，也就是上面官方的GeoLite2-City.mmdb。php有功能会检测mmdb的info段的datebase值必须为'GeoIP2-City。其他的'GeoIP2-Country'或自定义都不行。  
+我是改了文件 /nexusphp/vendor/geoip2/geoip2/src/Database/Reader.php 。删除了一段。
+```
+            $method = lcfirst((new \ReflectionClass($class))->getShortName());
+
+            throw new \BadMethodCallException(
+                "The $method method cannot be used to open a {$this->dbType} database"
+            );
+```
+之后就能读取到mmdb了。查看生效时要换个ip，因为有缓存。
 
 
 
